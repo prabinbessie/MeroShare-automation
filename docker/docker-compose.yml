@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  meroshare-automation:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: meroshare-automation
+    env_file:
+      - ../.env
+    volumes:
+      - ../logs:/app/logs
+      - ../screenshots:/app/screenshots
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
