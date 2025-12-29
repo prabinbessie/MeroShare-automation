@@ -1,13 +1,11 @@
 /**
- * Issue Detection & Matching
+ * SHARE Issue Detection & Matching
  *
- * VALIDATED against actual MeroShare ASBA page HTML
- * - Company list uses div.company-list structure
- * - Apply button is button.btn-issue with <i>Apply</i>
  */
 
 import { logger } from "../utils/logger.js"
 import { SELECTORS, TIMEOUTS } from "../config/constants.js"
+import { Target } from "puppeteer-core"
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -23,30 +21,32 @@ export class IssueDetector {
     logger.info(`Searching for issue: ${this.config.targetIssueName}`)
 
     try {
-      // Wait for company list to load
       await this.page.waitForSelector(SELECTORS.ASBA.COMPANY_LIST, {
         timeout: TIMEOUTS.LONG,
       })
 
-      await delay(2000) // Allow Angular to render
+      await delay(2000) // delay as angular may still be rendering
 
-      // Scrape all available issues from company list
+      //scrape all available issues from company list 
       const issues = await this.scrapeIssues()
       logger.info(`Found ${issues.length} available issues`)
+
+      // if (issues ==== ${targetIssue}){
+      //   logger.info("Target issue is available for application.")
+      //   return targetIssue
+      // }
 
       if (issues.length === 0) {
         logger.warn("No issues found on the page")
         await this.debugPageStructure()
         return null
       }
-
-      // Log available issues
       issues.forEach((issue, idx) => {
         logger.debug(`Issue ${idx + 1}: ${issue.name} (${issue.type}) - ${issue.canApply ? "APPLY" : "CLOSED"}`)
       })
 
-      // Match target issue
-      const targetIssue = this.matchIssue(issues, this.config.targetIssueName)
+      const targetIssue = this.matchIssue(issues, this.config.targetIssueName)      // matchingh target issue
+
 
       if (targetIssue) {
         logger.info(`Target issue matched: ${targetIssue.name}`)
@@ -77,29 +77,22 @@ export class IssueDetector {
 
       companyLists.forEach((list, index) => {
         try {
-          // Get company name - from span with tooltip="Company Name"
           const nameEl =
             list.querySelector('.company-name span[tooltip="Company Name"]') ||
             list.querySelector(".company-name span:first-child")
           const name = nameEl?.textContent?.trim() || ""
 
-          // Get share type (IPO/FPO)
+          //getshare type like ipo or fpo
           const typeEl = list.querySelector(".share-of-type")
           const type = typeEl?.textContent?.trim() || ""
-
-          // Get share group
           const groupEl = list.querySelector(".isin")
           const group = groupEl?.textContent?.trim() || ""
-
-          // Get sub group (scrip code)
           const subGroupEl = list.querySelector('span[tooltip="Sub Group"]')
           const subGroup = subGroupEl?.textContent?.trim() || ""
-
-          // Check for Apply button - button.btn-issue
           const applyButton = list.querySelector("button.btn-issue")
           const canApply = applyButton !== null && !applyButton.disabled
 
-          // Only add if we have a valid name
+          //only add if we have a valid name
           if (name) {
             issues.push({
               index,
@@ -108,11 +101,11 @@ export class IssueDetector {
               group,
               subGroup,
               canApply,
-              element: null, // Cannot serialize DOM elements
+              element: null, //cannot serialize DOm elemen
             })
           }
         } catch (e) {
-          console.error("Error parsing company list item:", e)
+          console.error("Error parsing  acompany list item:", e)
         }
       })
 
@@ -123,29 +116,27 @@ export class IssueDetector {
   matchIssue(issues, targetName) {
     const normalized = targetName.toLowerCase().trim()
 
-    // Strategy 1: Exact match (case insensitive)
+    // get a  Exact match 
     let match = issues.find((issue) => issue.name.toLowerCase().trim() === normalized && issue.canApply)
 
-    // Strategy 2: Partial name match
+    //secondly we do  partial name match inital 
     if (!match) {
       match = issues.find((issue) => issue.name.toLowerCase().includes(normalized) && issue.canApply)
     }
 
-    // Strategy 3: Target contains issue name
+    // thirdly Target contains issue name
     if (!match) {
       match = issues.find((issue) => normalized.includes(issue.name.toLowerCase().trim()) && issue.canApply)
     }
 
-    // Strategy 4: Word-based match (any significant word matches)
+    // fourthly wordbased match if any siginificnalty matched words
     if (!match) {
-      const targetWords = normalized.split(/\s+/).filter((w) => w.length > 2)
+      const targetWords = normalized.split(/\s+/).filter((w) => w.length > 2) // ignore short words
       match = issues.find((issue) => {
         const issueWords = issue.name.toLowerCase().split(/\s+/)
         return targetWords.some((tw) => issueWords.some((iw) => iw.includes(tw))) && issue.canApply
       })
     }
-
-    // Return even if not applicable (for better error reporting)
     if (!match) {
       match = issues.find(
         (issue) => issue.name.toLowerCase().includes(normalized) || normalized.includes(issue.name.toLowerCase()),
@@ -177,7 +168,6 @@ export class IssueDetector {
     logger.info(`Clicking Apply button for: ${issue.name}`)
 
     try {
-      // Click the apply button within the matching company list
       const clicked = await this.page.evaluate((issueIndex) => {
         const companyLists = document.querySelectorAll(".company-list")
         if (companyLists[issueIndex]) {

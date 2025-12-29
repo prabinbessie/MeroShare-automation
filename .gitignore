@@ -7,11 +7,10 @@
 npm-debug.log*
 yarn-debug.log*
 
-# Screenshots (may contain sensitive data)
 /screenshots
 *.png
 
-# Environment files (contain credentials)
+# Environment files 
 .env
 .env.*
 !.env.example
@@ -42,6 +41,6 @@ pids
 
 # TypeScript
 *.tsbuildinfo
-meroshare-asba-v2.1.0/meroshare-asba
-meroshare-asba-v2.1.0/puppeteer/.local-chromium/*
-meroshare-asba-v2.1.0.zip
+meroshare-asba-v1.1.0/*
+meroshare-asba-v1.1.0/puppeteer/.local-chromium/*
+meroshare-asba-v1.1.0.zip

@@ -1,9 +1,7 @@
 /**
- * Application Constants - FINAL VALIDATED VERSION
+ * Application Constants
  *
  * All selectors validated from actual MeroShare HTML structure:
- * - Login: Select2 for DP, standard inputs for username/password
- * - ASBA Form: Native selects for bank and account, standard inputs for kitta/crn/pin
  */
 
 export const URLS = {
@@ -14,30 +12,20 @@ export const URLS = {
 }
 
 export const SELECTORS = {
-  // Login page selectors - VALIDATED
   LOGIN: {
-    // Select2 DP dropdown
     DP_CONTAINER: ".select2-container",
     DP_SELECTION: ".select2-selection--single",
     DP_HIDDEN_SELECT: "select.select2-hidden-accessible",
-
-    // Form inputs - exact IDs
     USERNAME_INPUT: "input#username",
     PASSWORD_INPUT: "input#password",
-
-    // Submit button
     SUBMIT_BUTTON: 'button[type="submit"]',
     LOGIN_FORM: "form.login-form, form",
-
-    // Post-login indicators
     DASHBOARD_INDICATOR: ".app-body, .sidebar, app-dashboard, .main",
-
-    // Error indicators
     ERROR_MESSAGE: ".toast-error, .alert-danger, .text-danger",
     TOAST_CONTAINER: "#toast-container",
   },
 
-  // ASBA page selectors - VALIDATED
+  //asba page selectors 
   ASBA: {
     PAGE_CONTAINER: "app-asba",
     MAIN_CONTENT: ".main, .main-container",
@@ -47,40 +35,22 @@ export const SELECTORS = {
     APPLY_BUTTON: "button.btn-issue",
   },
 
-  // Application form selectors - VALIDATED from HTML
   FORM: {
-    // Bank dropdown - native select
     BANK_SELECT: "select#selectBank",
 
     ACCOUNT_SELECT: "select#accountNumber",
-
-    // Branch - readonly input, auto-filled
     BRANCH_INPUT: "input#selectBranch",
-
     MIN_QUANTITY_LABEL: "label:contains('Minimum Quantity')",
     MIN_QUANTITY_VALUE: ".form-value span",
-
-    // Applied Kitta - number input
     KITTA_INPUT: "input#appliedKitta",
-
-    // Amount - readonly, auto-calculated
     AMOUNT_INPUT: "input#amount",
-
-    // CRN - required input
     CRN_INPUT: "input#crnNumber",
-
-    // Disclaimer checkbox
     DISCLAIMER_CHECKBOX: "input#disclaimer",
-
-    // Transaction PIN (step 2)
     TRANSACTION_PIN: "input#transactionPIN",
-
-    // Submit buttons
     PROCEED_BUTTON: 'button.btn-primary[type="submit"]',
     APPLY_BUTTON: 'button.btn-primary[type="submit"]',
   },
 
-  // Select2 generic selectors (for DP dropdown only)
   SELECT2: {
     CONTAINER: ".select2-container",
     CONTAINER_OPEN: ".select2-container--open",
@@ -92,8 +62,6 @@ export const SELECTORS = {
     OPTION: ".select2-results__option",
     OPTION_HIGHLIGHTED: ".select2-results__option--highlighted",
   },
-
-  // Result indicators
   RESULT: {
     SUCCESS_TOAST: ".toast-success",
     ERROR_TOAST: ".toast-error",

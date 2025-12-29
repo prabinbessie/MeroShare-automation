@@ -1,28 +1,20 @@
 {
-  "name": "meroshare-asba-automation",
-  "version": "2.1.0",
-  "description": "Enterprise-grade MeroShare ASBA automation with multi-account support",
+  "name": "meroshare-automation",
+  "version": "1.1.0",
+  "description": "MeroShare ASBA automation with multi-account support",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "meroshare-asba": "./bootstrap.cjs"
+    "meroshare-asba": "./dist/bundle.cjs"
   },
   "scripts": {
     "start": "node src/index.js",
     "dev": "NODE_ENV=development LOG_LEVEL=debug HEADLESS_MODE=false node src/index.js",
     "validate": "node -e \"import('./src/config/config.js')\"",
-    "clean": "rm -rf logs screenshots dist node_modules",
-    "build": "npm run build:all",
-    "build:all": "pkg . --targets node18-linux-x64,node18-macos-x64,node18-win-x64 --output dist/meroshare-asba",
-    "build:linux": "pkg . --targets node18-linux-x64 --output dist/meroshare-asba-linux",
-    "build:mac": "pkg . --targets node18-macos-x64 --output dist/meroshare-asba-macos && npm run postbuild:mac",
-    "build:win": "pkg . --targets node18-win-x64 --output dist/meroshare-asba-win.exe",
-    "postbuild:mac": "mkdir -p dist/puppeteer && cp -R node_modules/puppeteer/.local-chromium dist/puppeteer/.local-chromium || true && mkdir -p dist/sharp/vendor && cp -R node_modules/sharp/vendor dist/sharp/vendor || true && cp .env dist/.env || true"
-    
+    "clean": "rm -rf logs screenshots dist node_modules"
   },
   "pkg": {
     "assets": [
-      "node_modules/sharp/vendor/**",
       "config/.env.example"
     ],
     "scripts": [],
@@ -33,36 +25,25 @@
     "asba",
     "automation",
     "puppeteer",
+    "Prabin",
+    "Bhandari",
     "nepal",
     "ipo",
     "cdsc"
   ],
-  "author": "Prabin Bhandari ",
+  "author": "Prabin Bhandari",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
-    "puppeteer": "^23.10.4",
+    "puppeteer-core": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "winston": "^3.19.0",
-    "next": "16.1.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "class-variance-authority": "0.7.1",
-    "clsx": "2.1.1",
-    "lucide-react": "0.562.0",
-    "tailwind-merge": "3.4.0",
-    "tailwindcss-animate": "1.0.7"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@yao-pkg/pkg": "^5.11.0",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
-    "@types/node": "25.0.3",
-    "typescript": "5.9.3",
-    "tailwindcss": "4.1.18",
-    "postcss": "8.5.6"
+    "esbuild": "^0.24.0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -70,7 +51,6 @@
   "files": [
     "src/",
     "config/.env.example",
-    "README.md",
-    "bootstrap.cjs"
+    "README.md"
   ]
 }

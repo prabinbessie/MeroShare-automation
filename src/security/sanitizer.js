@@ -2,7 +2,6 @@
  * Data Sanitization
  *
  * Masks sensitive data in logs and outputs
- * Ensures no credentials leak to logs or screenshots
  */
 
 const SENSITIVE_FIELDS = ["password", "token", "secret", "key", "credential", "pin", "crn", "otp", "auth", "bearer"]
@@ -17,16 +16,14 @@ export function sanitize(data) {
   for (const [key, value] of Object.entries(data)) {
     const lowerKey = key.toLowerCase()
 
-    // Check if field should be masked
-    const isSensitive = SENSITIVE_FIELDS.some((field) => lowerKey.includes(field))
+    const isSensitive = SENSITIVE_FIELDS.some((field) => lowerKey.includes(field)) //check if key is sensitive
 
     if (isSensitive) {
       sanitized[key] = "***REDACTED***"
     } else if (typeof value === "object" && value !== null) {
       sanitized[key] = sanitize(value)
     } else if (typeof value === "string" && looksLikeSensitive(value)) {
-      // Extra check for values that look like sensitive data
-      sanitized[key] = maskString(value, 4)
+      sanitized[key] = maskString(value, 4) //mask all but first 4 chars
     } else {
       sanitized[key] = value
     }
@@ -43,16 +40,16 @@ export function maskString(str, visibleChars = 4) {
 }
 
 function looksLikeSensitive(value) {
-  // Don't mask short values or URLs
+  //Don't mask short values or. the url
   if (!value || value.length < 8 || value.startsWith("http")) {
     return false
   }
 
   // Check for patterns that look like secrets
   const patterns = [
-    /^[A-Za-z0-9]{32,}$/, // Long alphanumeric strings (API keys)
+    /^[A-Za-z0-9]{32,}$/, // Long alphanumeric strings
     /^[A-Za-z0-9+/=]{20,}$/, // Base64 encoded data
-    /^sk_[a-z]+_[A-Za-z0-9]+$/, // Stripe-style keys
+    /^sk_[a-z]+_[A-Za-z0-9]+$/, //Stripe-style keys
     /^ghp_[A-Za-z0-9]+$/, // GitHub tokens
   ]
 
@@ -62,7 +59,6 @@ function looksLikeSensitive(value) {
 export function sanitizeUrl(url) {
   try {
     const urlObj = new URL(url)
-    // Remove sensitive query parameters
     const sensitiveParams = ["token", "key", "secret", "password", "auth"]
     sensitiveParams.forEach((param) => {
       if (urlObj.searchParams.has(param)) {

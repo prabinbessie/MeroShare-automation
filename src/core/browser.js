@@ -1,18 +1,17 @@
 /**
- * Browser Lifecycle Management
+ * Browser Lifecycle Management 
  *
  * Handles Puppeteer browser initialization with:
- * - Anti-detection measures
- * - Human-like configuration
- * - Resource optimization
+ * - Anti-detection measures for stealth browsing
+ * - human like behavior emulation
+ * - Resource optimization a puppeteer instance
  */
 
 import puppeteer from "puppeteer-extra"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { logger } from "../utils/logger.js"
 import { USER_AGENTS } from "../config/constants.js"
-
-// Add stealth plugin to evade detection
+//stealth mode
 puppeteer.use(StealthPlugin())
 
 export class BrowserManager {
@@ -23,7 +22,7 @@ export class BrowserManager {
   }
 
   async launch() {
-    logger.info("Launching browser...")
+    logger.info("Launching browser.......")
 
     const launchOptions = {
       headless: this.config.headless ? "new" : false,
@@ -46,26 +45,23 @@ export class BrowserManager {
     const pages = await this.browser.pages()
     this.page = pages[0] || (await this.browser.newPage())
 
-    // Set user agent
+
     const userAgent = this.config.userAgent || this.getRandomUserAgent()
     await this.page.setUserAgent(userAgent)
-
-    // Additional anti-detection measures
+//add security 
     await this.applyAntiDetection()
 
-    logger.info("✅ Browser launched successfully")
+    logger.info("Browser launched successfully....")
     return { browser: this.browser, page: this.page }
   }
 
   async applyAntiDetection() {
-    // Override the navigator.webdriver property
     await this.page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, "webdriver", {
         get: () => false,
       })
     })
 
-    // Override permissions
     await this.page.evaluateOnNewDocument(() => {
       const originalQuery = window.navigator.permissions.query
       window.navigator.permissions.query = (parameters) =>
@@ -74,14 +70,13 @@ export class BrowserManager {
           : originalQuery(parameters)
     })
 
-    // Add chrome object
     await this.page.evaluateOnNewDocument(() => {
       window.chrome = {
         runtime: {},
       }
     })
 
-    logger.debug("Anti-detection measures applied")
+    logger.debug("Anti-detection measures applied..")
   }
 
   getRandomUserAgent() {

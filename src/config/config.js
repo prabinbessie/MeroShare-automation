@@ -1,8 +1,9 @@
 /**
- * Configuration Loader & Validator
+ * Configuration Loader and Validator
  *
  * Supports SINGLE account and MULTI-account modes
- * Multi-account: Define ACCOUNTS as JSON array in .env
+ * 
+ * Multi-account: ACCOUNTS as JSON array in .env file
  */
 
 import dotenv from "dotenv"
@@ -13,7 +14,6 @@ import { logger } from "../utils/logger.js"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Load environment variables
 dotenv.config({ path: join(__dirname, "../../.env") })
 
 class ConfigValidator {
@@ -64,7 +64,7 @@ class ConfigValidator {
       }
     }
 
-    // Single account mode (backward compatible)
+    // if single account 
     return [
       {
         username: process.env.MEROSHARE_USERNAME,
@@ -78,19 +78,11 @@ class ConfigValidator {
     ]
   }
 }
-
-// Parse accounts
+//for multiple accountss
 const accounts = ConfigValidator.parseAccounts()
-
-// Validate all accounts
 accounts.forEach((acc, i) => ConfigValidator.validateAccount(acc, accounts.length > 1 ? i + 1 : 0))
-
-// Export configuration
 export const config = {
-  // Accounts array (supports single or multiple)
   accounts,
-
-  // Backward compatibility - first account as default
   username: accounts[0].username,
   password: accounts[0].password,
   dpName: accounts[0].dpName,
@@ -98,8 +90,6 @@ export const config = {
   transactionPin: accounts[0].transactionPin,
   appliedKitta: accounts[0].appliedKitta,
   targetIssueName: accounts[0].targetIssueName,
-
-  // Global settings
   headless: process.env.HEADLESS_MODE === "true",
   browserTimeout: Number.parseInt(process.env.BROWSER_TIMEOUT || "30000"),
   navigationTimeout: Number.parseInt(process.env.NAVIGATION_TIMEOUT || "60000"),
@@ -108,20 +98,15 @@ export const config = {
   actionDelayMin: Number.parseInt(process.env.ACTION_DELAY_MIN || "500"),
   actionDelayMax: Number.parseInt(process.env.ACTION_DELAY_MAX || "2000"),
 
-  // Security
   maskSensitiveLogs: process.env.MASK_SENSITIVE_LOGS !== "false",
   logLevel: process.env.LOG_LEVEL || "info",
-
-  // Notifications
   notificationEnabled: process.env.NOTIFICATION_ENABLED === "true",
   notificationWebhook: process.env.NOTIFICATION_WEBHOOK_URL,
   notificationEmail: process.env.NOTIFICATION_EMAIL,
-
-  // Browser settings
   userAgent: process.env.USER_AGENT || "",
   viewportWidth: Number.parseInt(process.env.VIEWPORT_WIDTH || "1920"),
   viewportHeight: Number.parseInt(process.env.VIEWPORT_HEIGHT || "1080"),
   networkIdleTimeout: Number.parseInt(process.env.NETWORK_IDLE_TIMEOUT || "2000"),
 }
 
-logger.info(`Configuration loaded: ${accounts.length} account(s) configured`)
+logger.info(`configuration loaded: ${accounts.length} account(s) configured sucees`)

@@ -1,12 +1,8 @@
 /**
- * Form Automation - PRODUCTION READY
+ * Form Automation 
  *
  * Handles ASBA application form with:
- * - Bank selection (native select)
- * - Account selection (native select)
- * - Minimum quantity validation
- * - Kitta, CRN, PIN entry
- * - Two-step submission (Proceed -> PIN -> Apply)
+ * - Navigation to specific issue forms
  */
 
 import { logger } from "../utils/logger.js"
@@ -22,11 +18,11 @@ export class FormAutomation {
   constructor(page, config) {
     this.page = page
     this.config = config
-    this.minQuantity = 10 // Default, will be read from page
+    this.minQuantity = 10 //Default
   }
 
   async navigateToIssue(issue) {
-    logger.info(`Opening form for: ${issue.name}`)
+    logger.info(`Opening form for: ${issue.name}.`)
 
     try {
       const clicked = await this.page.evaluate((issueIndex) => {
@@ -45,12 +41,12 @@ export class FormAutomation {
 
       await delay(3000)
 
-      // Wait for form to load
+      //wait for form to load 
       await this.page.waitForSelector("select#selectBank, .section-title, .card-body", {
         timeout: TIMEOUTS.LONG,
       })
 
-      logger.info("Application form loaded")
+      logger.info("Application form loaded sucess")
     } catch (error) {
       throw new Error(`Failed to open form: ${error.message}`)
     }
@@ -60,40 +56,25 @@ export class FormAutomation {
     logger.info("Filling application form...")
 
     try {
+      //delay to ensure form is fully interactive
       await delay(1500)
-
-      // Step 1: Read minimum quantity from page
       await this.readMinimumQuantity()
-
-      // Step 2: Validate kitta against minimum
       this.validateKitta()
-
-      // Step 3: Select bank
       logger.info("Selecting bank...")
       await this.selectBank()
       await delay(2000)
-
-      // Step 4: Select account number
       logger.info("Selecting account...")
       await this.selectAccount()
       await delay(1500)
-
-      // Step 5: Enter kitta
       logger.info(`Entering kitta: ${this.config.appliedKitta}`)
       await this.fillKitta()
       await delay(1000)
-
-      // Step 6: Verify amount calculated
       await this.verifyAmount()
-
-      // Step 7: Enter CRN
       if (this.config.crnNumber) {
         logger.info("Entering CRN...")
         await this.fillCRN()
         await delay(500)
       }
-
-      // Step 8: Accept disclaimer
       logger.info("Accepting disclaimer...")
       await this.acceptDisclaimer()
 
@@ -107,11 +88,9 @@ export class FormAutomation {
   async readMinimumQuantity() {
     try {
       const minQty = await this.page.evaluate(() => {
-        // Find the minimum quantity label and its value
         const labels = document.querySelectorAll("label")
         for (const label of labels) {
           if (label.textContent.includes("Minimum Quantity")) {
-            // Get the parent row and find the value span
             const row = label.closest(".form-group, .row")
             if (row) {
               const valueSpan = row.querySelector(".form-value span")
@@ -121,7 +100,7 @@ export class FormAutomation {
             }
           }
         }
-        return 10 // Default fallback
+        return 10 
       })
 
       this.minQuantity = minQty || 10
@@ -142,7 +121,7 @@ export class FormAutomation {
       )
     }
 
-    // Check if kitta is divisible (some issues require this)
+    // Check if kitta is divisible
     logger.info(`Kitta validation passed: ${kitta} >= ${this.minQuantity}`)
   }
 
@@ -165,15 +144,11 @@ export class FormAutomation {
       if (banks.length <= 1) {
         throw new Error("No bank options available. Please check your MeroShare account settings.")
       }
-
-      // Select first valid bank
       const bank = banks.find((b) => b.value && b.value !== "")
       if (!bank) throw new Error("No valid bank option found")
 
       await this.page.select(SELECTORS.FORM.BANK_SELECT, bank.value)
       logger.info(`Bank selected: ${bank.text}`)
-
-      // Wait for account dropdown to populate
       await delay(2000)
     } catch (error) {
       throw new Error(`Bank selection failed: ${error.message}`)
@@ -182,13 +157,17 @@ export class FormAutomation {
 
   async selectAccount() {
     try {
-      // Wait for account dropdown
       await this.page.waitForSelector(SELECTORS.FORM.ACCOUNT_SELECT, { timeout: TIMEOUTS.MEDIUM })
+      // await this.page.evaluate(() => {
+      //   const select = document.querySelector("select#accountNumber")
+      //   if (select) {
+      //     select.focus()
+      //   }
+      // })
 
-      // Small delay for options to load after bank selection
       await delay(1000)
 
-      // Get available accounts
+      //geta available accounts
       const accounts = await this.page.evaluate((sel) => {
         const select = document.querySelector(sel)
         if (!select) return []
@@ -199,14 +178,14 @@ export class FormAutomation {
       }, SELECTORS.FORM.ACCOUNT_SELECT)
 
       logger.debug(`Available accounts: ${accounts.length}`)
+            //logger.debug(`${accounts.length}`)
 
       if (accounts.length <= 1) {
-        // Only "Please choose one" option - no actual accounts
         throw new Error("No bank accounts available. Please ensure your bank account is linked in MeroShare.")
       }
 
-      // Select first valid account (skip "Please choose one")
-      const account = accounts.find((a) => a.value && a.value !== "")
+      const account = accounts.find((a) => a.value && a.value !== "") 
+    
       if (!account) throw new Error("No valid bank account found")
 
       await this.page.select(SELECTORS.FORM.ACCOUNT_SELECT, account.value)
@@ -219,8 +198,6 @@ export class FormAutomation {
   async fillKitta() {
     try {
       await this.page.waitForSelector(SELECTORS.FORM.KITTA_INPUT, { timeout: TIMEOUTS.SHORT })
-
-      // Clear and set value using JavaScript for reliability
       await this.page.evaluate(
         (sel, val) => {
           const input = document.querySelector(sel)
@@ -236,8 +213,6 @@ export class FormAutomation {
         SELECTORS.FORM.KITTA_INPUT,
         this.config.appliedKitta.toString(),
       )
-
-      // Verify the value was set
       const setValue = await this.page.evaluate((sel) => {
         const input = document.querySelector(sel)
         return input?.value || ""
@@ -323,32 +298,22 @@ export class FormAutomation {
     logger.info("Starting submission process...")
 
     try {
-      // Step 1: Click Proceed button
       logger.info("Step 1: Clicking Proceed...")
       await this.clickProceed()
 
-      // Wait for PIN form
       await delay(2000)
 
-      // Check for any error messages first
+      //check if we have any form errors first 
       const formError = await this.checkForErrors()
       if (formError) {
         throw new Error(`Form validation failed: ${formError}`)
       }
-
-      // Step 2: Wait for PIN input
       await this.page.waitForSelector(SELECTORS.FORM.TRANSACTION_PIN, { timeout: TIMEOUTS.MEDIUM })
       logger.info("PIN form loaded")
-
-      // Step 3: Enter PIN
       logger.info("Step 2: Entering transaction PIN...")
       await this.enterPIN()
-
-      // Step 4: Click Apply
       logger.info("Step 3: Clicking Apply...")
       await this.clickApply()
-
-      // Step 5: Parse result
       const result = await this.parseResult()
       return result
     } catch (error) {
@@ -358,14 +323,11 @@ export class FormAutomation {
   }
 
   async clickProceed() {
-    // Find enabled submit button
     const btn = await this.page.$('button.btn-primary[type="submit"]:not([disabled])')
 
     if (!btn) {
-      // Check if button exists but is disabled
       const disabledBtn = await this.page.$('button.btn-primary[type="submit"][disabled]')
       if (disabledBtn) {
-        // Try to get validation error message
         const errorMsg = await this.getValidationError()
         throw new Error(`Form incomplete: ${errorMsg || "Please fill all required fields"}`)
       }
@@ -378,14 +340,11 @@ export class FormAutomation {
 
   async getValidationError() {
     return await this.page.evaluate(() => {
-      // Check for validation icons
       const validationIcons = document.querySelectorAll(".validation-icon.alert")
       for (const icon of validationIcons) {
         const tooltip = icon.getAttribute("tooltip")
         if (tooltip) return tooltip
       }
-
-      // Check for error text
       const errorElements = document.querySelectorAll(".text-danger, .invalid-feedback")
       for (const el of errorElements) {
         if (el.textContent.trim()) return el.textContent.trim()
@@ -397,11 +356,9 @@ export class FormAutomation {
 
   async checkForErrors() {
     return await this.page.evaluate(() => {
-      // Check toast errors
       const toast = document.querySelector(".toast-error")
       if (toast) return toast.textContent.trim()
 
-      // Check alert errors
       const alert = document.querySelector(".alert-danger")
       if (alert) return alert.textContent.trim()
 
@@ -411,13 +368,11 @@ export class FormAutomation {
 
   async enterPIN() {
     const pin = this.config.transactionPin
-    if (!pin) throw new Error("Transaction PIN not configured in .env file")
+    if (!pin) throw new Error("Transaction PIN not configured in .env file ")
 
     if (!/^\d{4}$/.test(pin)) {
       throw new Error("Transaction PIN must be exactly 4 digits")
     }
-
-    // Set PIN value using JavaScript
     await this.page.evaluate(
       (sel, val) => {
         const input = document.querySelector(sel)
@@ -453,9 +408,8 @@ export class FormAutomation {
   async parseResult() {
     await delay(3000)
 
-    // Check for success toast
     const successResult = await this.page.evaluate(() => {
-      const toast = document.querySelector(".toast-success")
+      const toast = document.querySelector(".toast-success") //check for success toast
       if (toast) return { success: true, message: toast.textContent.trim() }
       return null
     })
@@ -468,10 +422,8 @@ export class FormAutomation {
         referenceId: this.extractReference(successResult.message),
       }
     }
-
-    // Check for error toast
     const errorResult = await this.page.evaluate(() => {
-      const toast = document.querySelector(".toast-error")
+      const toast = document.querySelector(".toast-error")//error toast
       if (toast) return { success: false, error: toast.textContent.trim() }
 
       const alert = document.querySelector(".alert-danger")
@@ -484,8 +436,6 @@ export class FormAutomation {
       logger.error(`FAILED: ${errorResult.error}`)
       return errorResult
     }
-
-    // Check page content for success indicators
     const pageContent = await this.page.evaluate(() => document.body.innerText.toLowerCase())
 
     if (
@@ -506,6 +456,7 @@ export class FormAutomation {
   }
 
   extractReference(msg) {
+    // extract reference number from message
     const patterns = [/reference[:\s#]*(\w+)/i, /application[:\s#]*(\d+)/i, /(\d{8,})/]
     for (const pattern of patterns) {
       const match = msg.match(pattern)
@@ -516,7 +467,6 @@ export class FormAutomation {
 
   async captureScreenshot(prefix) {
     try {
-      // Ensure screenshots directory exists
       const screenshotsDir = "screenshots"
       if (!fs.existsSync(screenshotsDir)) {
         fs.mkdirSync(screenshotsDir, { recursive: true })

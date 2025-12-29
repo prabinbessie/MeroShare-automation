@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 /**
- * MeroShare ASBA Automation - Production Ready
- *
- * Features:
- * - Multi-account support
- * - Auto-creates required directories
- * - Comprehensive error handling
- * - Detailed success/failure reporting
+ * MeroShare ASBA Automation 
+ * By: Prabin Bhandari
+ * Main Entry Point
+
  */
 
 import fs from "fs"
@@ -17,7 +14,6 @@ import { dirname } from "path"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Initialize required directories before anything else
 function initializeDirectories() {
   const dirs = ["logs", "screenshots"]
   for (const dir of dirs) {
@@ -26,8 +22,6 @@ function initializeDirectories() {
       fs.mkdirSync(dirPath, { recursive: true })
     }
   }
-
-  // Create .env from example if not exists
   const envPath = path.resolve(process.cwd(), ".env")
   const envExamplePath = path.resolve(__dirname, "../config/.env.example")
 
@@ -38,10 +32,9 @@ function initializeDirectories() {
   }
 }
 
-// Initialize directories first
 initializeDirectories()
 
-// Now import modules that depend on directories/config
+//modules
 import { config } from "./config/config.js"
 import { logger } from "./utils/logger.js"
 import { BrowserManager } from "./core/browser.js"
@@ -69,7 +62,6 @@ class MeroShareAutomation {
     for (let i = 0; i < totalAccounts; i++) {
       const account = config.accounts[i]
       const label = totalAccounts > 1 ? `[Account ${i + 1}/${totalAccounts}]` : ""
-
       logger.info("")
       logger.info(`${label} Processing: ${this.maskValue(account.username)}`)
       logger.info(`${label} DP: ${account.dpName}`)
@@ -102,18 +94,15 @@ class MeroShareAutomation {
         })
         logger.error(`${label} FAILED: ${error.message}`)
       }
-
-      // Cleanup after each account
       await this.cleanup()
 
-      // Delay between accounts
+      //delay between multiple accounts
       if (i < totalAccounts - 1) {
         logger.info(`${label} Waiting before next account...`)
         await this.delay(3000, 5000)
       }
     }
 
-    // Print final summary
     this.printSummary()
 
     return this.results
@@ -122,6 +111,7 @@ class MeroShareAutomation {
   printHeader(totalAccounts) {
     logger.info("================================================================")
     logger.info("  MEROSHARE ASBA AUTOMATION")
+    logger.info("  BY PRABIN BHANDARI")
     logger.info("================================================================")
     logger.info(`  Mode: ${totalAccounts > 1 ? "MULTI-ACCOUNT" : "SINGLE ACCOUNT"}`)
     logger.info(`  Total Accounts: ${totalAccounts}`)
@@ -134,30 +124,29 @@ class MeroShareAutomation {
     const label = totalAccounts > 1 ? `[${accountIndex}/${totalAccounts}]` : ""
 
     try {
-      // Phase 1: Launch browser
       logger.info(`${label} Starting browser...`)
       this.browserManager = new BrowserManager(config)
       const { browser, page } = await this.browserManager.launch()
       this.page = page
 
-      // Setup network monitoring
+      //network monitoring
       this.networkMonitor = new NetworkMonitor(page)
       await this.networkMonitor.start()
       logger.info(`${label} Browser ready`)
 
-      // Phase 2: Login
+      //Login
       logger.info(`${label} Logging in...`)
       const loginHandler = new LoginHandler(page, account)
       await loginHandler.navigate()
       await loginHandler.login()
       logger.info(`${label} Login successful`)
 
-      // Phase 3: Navigate to ASBA
+      //Navigate to ASBA
       logger.info(`${label} Navigating to ASBA page...`)
       await this.navigateToASBA()
       logger.info(`${label} ASBA page loaded`)
 
-      // Phase 4: Find target issue
+      //Find target issue
       logger.info(`${label} Searching for: ${account.targetIssueName}`)
       const issueDetector = new IssueDetector(page, account)
       const targetIssue = await issueDetector.findTargetIssue()
@@ -165,7 +154,7 @@ class MeroShareAutomation {
       if (!targetIssue) {
         throw ErrorClassifier.create(
           "BUSINESS_LOGIC_ERROR",
-          `Issue "${account.targetIssueName}" not found. Check if issue name is correct and issue is open.`,
+          `Issue "${account.targetIssueName}" not found. Check if issue name is correct and issue is open`,
         )
       }
 
@@ -176,19 +165,13 @@ class MeroShareAutomation {
         )
       }
       logger.info(`${label} Found issue: ${targetIssue.name}`)
-
-      // Phase 5: Fill form
       logger.info(`${label} Filling application form...`)
       const formAutomation = new FormAutomation(page, account)
       await formAutomation.navigateToIssue(targetIssue)
       await formAutomation.fillForm()
       logger.info(`${label} Form filled`)
-
-      // Phase 6: Submit
       logger.info(`${label} Submitting application...`)
       const result = await formAutomation.submit()
-
-      // Return result
       return {
         success: result.success,
         message: result.message,
@@ -254,8 +237,6 @@ class MeroShareAutomation {
     })
 
     logger.info("================================================================")
-
-    // Send notifications if enabled
     if (config.notificationEnabled && this.results.length > 0) {
       this.sendNotifications()
     }
@@ -265,9 +246,9 @@ class MeroShareAutomation {
     try {
       const notifier = new Notifier(config)
       await notifier.sendBatch(this.results)
-      logger.info("Notification sent")
+      logger.info("notification sent")
     } catch (e) {
-      logger.warn(`Failed to send notification: ${e.message}`)
+      logger.warn(`failed to send notification: ${e.message}`)
     }
   }
 
@@ -295,7 +276,6 @@ class MeroShareAutomation {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }
-// Main execution
 ;(async () => {
   const automation = new MeroShareAutomation()
 

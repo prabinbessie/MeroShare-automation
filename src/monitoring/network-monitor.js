@@ -1,7 +1,7 @@
 /**
  * Network Monitor
  *
- * Intercepts and records network requests/responses
+ * intercepts and records network requests/responses from page
  */
 
 import { logger } from "../utils/logger.js"
@@ -17,10 +17,10 @@ export class NetworkMonitor {
   async start() {
     logger.info("Starting network monitoring...")
 
-    // Enable request interception
+    //request interception 
     await this.page.setRequestInterception(false)
 
-    // Monitor requests
+    //monitor requests 
     this.page.on("request", (request) => {
       if (this.isMonitoring) {
         this.requests.push({
@@ -32,7 +32,7 @@ export class NetworkMonitor {
       }
     })
 
-    // Monitor responses
+    //monitor responses from page
     this.page.on("response", async (response) => {
       if (this.isMonitoring) {
         try {
@@ -51,12 +51,12 @@ export class NetworkMonitor {
             timestamp: new Date().toISOString(),
           })
 
-          // Log important responses
+          //log responses related to submission actions
           if (response.url().includes("apply") || response.url().includes("submit")) {
-            logger.debug(`[v0] Network response captured: ${response.url()} - Status: ${response.status()}`)
+            logger.debug(`Network response captured: ${response.url()} - Status : ${response.status()}`)
           }
         } catch (error) {
-          // Ignore errors parsing response body
+          
         }
       }
     })

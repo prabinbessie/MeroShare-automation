@@ -2,7 +2,7 @@
 
 ## Overview
 
-This automation system is designed with bank-grade security practices to protect user credentials and sensitive data.
+This automation system is designed with high-grade security practices to protect user credentials and sensitive data. This is apart of my learning journey in building secure automation tools using Puppeteer. The following document outlines the security principles, threat model, best practices, and incident response strategies implemented in this system.
 
 ## Security Principles
 
@@ -43,11 +43,11 @@ This automation system is designed with bank-grade security practices to protect
 ## Best Practices
 
 ### For Users
-1. **Protect .env file**: Never commit to version control
-2. **Use strong passwords**: Follow security best practices
-3. **Monitor logs**: Review for suspicious activity
+1. **Protect .env file**: Never commit to version control i.eg. GitHub
+2. **Use strong passwords**: Follow security best practices 
+3. **Monitor logs**: Review for suspicious activity i.eg.account logis
 4. **Rotate credentials**: Change passwords regularly
-5. **Limit access**: Restrict who can run automation
+5. **Limit access**: Only authorized users should run the automation
 
 ### For Developers
 1. **Code Review**: Security-focused code review
@@ -66,7 +66,7 @@ If security issue detected:
 5. **Document Incident**: Post-mortem analysis
 
 ## Compliance
-
+> i hereby confirm that this automation system adheres to the following security and ethical guidelines:
 - Respects MeroShare Terms of Service
 - No security bypass attempts
 - User authorization required

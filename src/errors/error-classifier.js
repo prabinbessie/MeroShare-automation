@@ -1,7 +1,6 @@
 /**
- * Error Classification System
+ * Error Classification Module
  *
- * Structured error types with metadata
  */
 
 import { ERROR_CODES } from "../config/constants.js"

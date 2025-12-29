@@ -17,7 +17,7 @@ const SCREENSHOT_DIR = join(__dirname, "../../screenshots")
 
 export async function captureScreenshot(page, filename) {
   try {
-    // Ensure screenshots directory exists
+    //directory exists
     await mkdir(SCREENSHOT_DIR, { recursive: true })
 
     const filepath = join(SCREENSHOT_DIR, `${filename}.png`)
