@@ -44,3 +44,4 @@ pids
 meroshare-asba-v1.1.0/*
 meroshare-asba-v1.1.0/puppeteer/.local-chromium/*
 meroshare-asba-v1.1.0.zip.puppeteer-cache/
+.puppeteer-cache/

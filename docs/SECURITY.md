@@ -72,3 +72,5 @@ If security issue detected:
 - User authorization required
 - Manual intervention on challenges
 - Ethical automation practices
+---
+> I will not be held liable for misuse of this tool. Users are responsible for compliance with all applicable laws and regulations  as well as MeroShare's policies.
