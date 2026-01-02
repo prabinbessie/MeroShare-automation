@@ -16,8 +16,8 @@ Automate your MeroShare IPO/FPO ASBA applications with ease using  this secure P
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/meroshare-automation.git
-cd meroshare-automation
+git clone https://github.com/prabinbessie/MeroShare-automation.git
+cd MeroShare-automation
 
 # 1. Install dependencies
 npm install
@@ -118,7 +118,7 @@ TARGET_ISSUE_NAME=Citizens Santulit Yojana
 ## Project Structure
 
 ```
-meroshare-asba-automation/
+meroshare-automation/
 ├── src/
 │   ├── index.js              
 │   ├── config/
