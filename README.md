@@ -9,6 +9,7 @@ Automate your MeroShare IPO/FPO ASBA applications with ease using  this secure P
 - **Secure by Design**: Credentials masked in logs, no data leaks
 - **Executable Binary**: Distribute to users without exposing source code
 - **Detailed Reporting**: Success/failure summary with reference IDs
+- **Result Scraping**: Automatically checks and reports allotment results post-application smartly into json file
 
 
 
@@ -47,6 +48,7 @@ TARGET_ISSUE_NAME=Citizens Santulit Yojana
 APPLIED_KITTA=10
 CRN_NUMBER=your_crn
 TRANSACTION_PIN=1234
+RESULTS_MODE=false
 ```
 
 ### Multiple -Account Mode

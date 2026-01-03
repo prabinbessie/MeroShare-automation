@@ -45,6 +45,7 @@ import { NetworkMonitor } from "./monitoring/network-monitor.js"
 import { ErrorClassifier } from "./errors/error-classifier.js"
 import { ErrorHandler } from "./errors/error-handler.js"
 import { Notifier } from "./notifications/notifier.js"
+import { ResultScraper } from "./core/result-scraper.js"
 
 class MeroShareAutomation {
   constructor() {
@@ -56,6 +57,11 @@ class MeroShareAutomation {
 
   async executeAll() {
     const totalAccounts = config.accounts.length
+
+    //do we are in results mode?
+    if (config.resultsMode) {
+      return await this.executeResultsMode()
+    }
 
     this.printHeader(totalAccounts)
 
@@ -275,12 +281,127 @@ class MeroShareAutomation {
     const ms = max > min ? Math.floor(Math.random() * (max - min + 1)) + min : min
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
+
+  async executeResultsMode() {
+    const totalAccounts = config.accounts.length
+
+    logger.info("================================================================")
+    logger.info("  RESULTS SCRAPING MODE")
+    logger.info("  BY PRABIN BHANDARI")
+    logger.info("================================================================")
+    logger.info(`  Total Accounts: ${totalAccounts}`)
+    logger.info("================================================================")
+
+    for (let i = 0; i < totalAccounts; i++) {
+      const account = config.accounts[i]
+      const label = totalAccounts > 1 ? `[Account ${i + 1}/${totalAccounts}]` : ""
+
+      logger.info("")
+      logger.info(`${label} Scraping results for: ${this.maskValue(account.username)}`)
+      logger.info(`${label} DP: ${account.dpName}`)
+
+      try {
+        logger.info(`${label} Starting browser...`)
+        this.browserManager = new BrowserManager(config)
+        const { browser, page } = await this.browserManager.launch()
+        this.page = page
+        logger.info(`${label} Browser ready`)
+        logger.info(`${label} Logging in...`)
+        const loginHandler = new LoginHandler(page, account)
+        await loginHandler.navigate()
+        await loginHandler.login()
+        logger.info(`${label} Login successful`)
+        const scraper = new ResultScraper(page, account)
+        const result = await scraper.execute()
+
+        this.results.push({
+          account: this.maskValue(account.username),
+          dp: account.dpName,
+          ...result,
+        })
+
+        if (result.success) {
+          logger.info(`${label} ✓ Successfully scraped ${result.results.length} application(s)`)
+          if (result.changes) {
+            const { newAllotments, updatedAllotments } = result.changes
+            if (newAllotments.length > 0) {
+              logger.info(`${label} 🎉 You have ${newAllotments.length} NEW allotment(s)!`)
+            }
+            if (updatedAllotments.length > 0) {
+              logger.info(`${label} 📊 ${updatedAllotments.length} allotment(s) updated`)
+            }
+          }
+        } else {
+          logger.error(`${label} ✗ Failed to scrape results: ${result.error}`)
+        }
+      } catch (error) {
+        this.results.push({
+          account: this.maskValue(account.username),
+          dp: account.dpName,
+          success: false,
+          error: error.message,
+          timestamp: new Date().toISOString(),
+        })
+        logger.error(`${label} ✗ Error: ${error.message}`)
+      }
+
+      await this.cleanup()
+      if (i < totalAccounts - 1) {
+        logger.info(`${label} Waiting before next account...`)
+        await this.delay(2000, 3000)
+      }
+    }
+
+    this.printResultsModeSummary()
+    return this.results
+  }
+
+  printResultsModeSummary() {
+    const successful = this.results.filter((r) => r.success)
+    const failed = this.results.filter((r) => !r.success)
+
+    logger.info("")
+    logger.info("================================================================")
+    logger.info("  RESULTS SCRAPING SUMMARY")
+    logger.info("================================================================")
+    logger.info(`  Total Accounts: ${this.results.length}`)
+    logger.info(`  Successful: ${successful.length}`)
+    logger.info(`  Failed: ${failed.length}`)
+    logger.info("----------------------------------------------------------------")
+
+    this.results.forEach((result) => {
+      const status = result.success ? "[OK]" : "[FAIL]"
+      logger.info(`  ${status} ${result.account} (${result.dp})`)
+
+      if (result.success && result.summary) {
+        logger.info(`        Total Applications: ${result.summary.total}`)
+        logger.info(`        Alloted: ${result.summary.alloted}`)
+        logger.info(`        Total Shares: ${result.summary.totalShares}`)
+
+        if (result.changes) {
+          if (result.changes.newAllotments.length > 0) {
+            logger.info(`        🎉 NEW: ${result.changes.newAllotments.length} allotment(s)`)
+          }
+        }
+      } else if (!result.success) {
+        logger.info(`        Error: ${result.error}`)
+      }
+    })
+
+    logger.info("================================================================")
+    logger.info(`  Results saved in: logs/application-results.json`)
+    logger.info("================================================================")
+  }
 }
 ;(async () => {
   const automation = new MeroShareAutomation()
 
   try {
     const results = await automation.executeAll()
+    if (config.resultsMode) {
+      const hasErrors = results.some((r) => !r.success)
+      process.exit(hasErrors ? 1 : 0)
+    }
 
     const successCount = results.filter((r) => r.success).length
     const failCount = results.filter((r) => !r.success).length

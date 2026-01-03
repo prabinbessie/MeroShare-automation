@@ -9,6 +9,7 @@ export const URLS = {
   LOGIN: "https://meroshare.cdsc.com.np/#/login",
   DASHBOARD: "https://meroshare.cdsc.com.np/#/dashboard",
   ASBA: "https://meroshare.cdsc.com.np/#/asba",
+  APPLICATION_REPORT: "https://meroshare.cdsc.com.np/#/applicantForm/report",
 }
 
 export const SELECTORS = {
@@ -67,6 +68,19 @@ export const SELECTORS = {
     ERROR_TOAST: ".toast-error",
     ALERT_SUCCESS: ".alert-success",
     ALERT_DANGER: ".alert-danger",
+  },
+  APPLICATION_REPORT: {
+    PAGE_CONTAINER: "app-applicant-report, .applicant-report",
+    COMPANY_ROW: ".company-list .company-item, .table tbody tr",
+    COMPANY_NAME: ".company-name, td:first-child",
+    REPORT_BUTTON: "button.btn-report, .btn-info, button:contains('Report')",
+    DETAIL_CONTAINER: ".modal-content, .report-detail, app-modal",
+    STATUS: ".status-badge, .allotment-status, span:contains('Alloted'), span:contains('Not Alloted')",
+    COMPANY_TITLE: ".company-title, .issue-name, h4, h5",
+    APPLIED_QTY: "td:contains('Applied Quantity') + td, .applied-qty",
+    ALLOTED_QTY: "td:contains('Alloted Quantity') + td, .alloted-qty",
+    PRICE_PER_SHARE: "td:contains('Price per Share') + td, .price",
+    CLOSE_BUTTON: "button.close, .btn-close, button[aria-label='Close']",
   },
 }
 

@@ -91,6 +91,7 @@ export const config = {
   appliedKitta: accounts[0].appliedKitta,
   targetIssueName: accounts[0].targetIssueName,
   headless: process.env.HEADLESS_MODE === "true",
+  resultsMode: process.env.RESULTS_MODE === "true",
   browserTimeout: Number.parseInt(process.env.BROWSER_TIMEOUT || "30000"),
   navigationTimeout: Number.parseInt(process.env.NAVIGATION_TIMEOUT || "60000"),
   screenshotOnError: process.env.SCREENSHOT_ON_ERROR !== "false",
