@@ -10,15 +10,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "NODE_ENV=development LOG_LEVEL=debug HEADLESS_MODE=false node src/index.js",
+    "results": "RESULTS_MODE=true node src/index.js",
     "validate": "node -e \"import('./src/config/config.js')\"",
-    "clean": "rm -rf logs screenshots dist node_modules"
-  },
-  "pkg": {
-    "assets": [
-      "config/.env.example"
-    ],
-    "scripts": [],
-    "outputPath": "dist"
+    "clean": "rm -rf logs screenshots node_modules"
   },
   "keywords": [
     "meroshare",
@@ -36,6 +30,7 @@
   "dependencies": {
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
+    "puppeteer": "^24.34.0",
     "puppeteer-core": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
