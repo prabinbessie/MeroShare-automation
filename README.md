@@ -7,7 +7,6 @@ Automate your MeroShare IPO/FPO ASBA applications with ease using  this secure P
 - **Intelligent Form Handling**: Auto-reads minimum quantity, validates kitta, handles dropdowns
 - **Production Ready**: error handling, retry logic, comprehensive logging
 - **Secure by Design**: Credentials masked in logs, no data leaks
-- **Executable Binary**: Distribute to users without exposing source code
 - **Detailed Reporting**: Success/failure summary with reference IDs
 - **Result Scraping**: Automatically checks and reports allotment results post-application smartly into json file
 
