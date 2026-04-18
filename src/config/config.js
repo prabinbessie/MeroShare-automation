@@ -16,6 +16,13 @@ const __dirname = dirname(__filename)
 
 dotenv.config({ path: join(__dirname, "../../.env") })
 
+const cliArgs = process.argv.slice(2)
+const issueArgIndex = cliArgs.indexOf("--issue")
+if (issueArgIndex !== -1 && cliArgs[issueArgIndex + 1]) {
+  process.env.TARGET_ISSUE_NAME = cliArgs[issueArgIndex + 1]
+  logger.info(`CLI override: TARGET_ISSUE_NAME = "${cliArgs[issueArgIndex + 1]}"`)
+}
+
 class ConfigValidator {
   static validateAccount(account, index = 0) {
     const prefix = index > 0 ? `Account ${index}: ` : ""

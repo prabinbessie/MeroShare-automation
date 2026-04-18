@@ -12,7 +12,10 @@
     "dev": "NODE_ENV=development LOG_LEVEL=debug HEADLESS_MODE=false node src/index.js",
     "results": "RESULTS_MODE=true node src/index.js",
     "validate": "node -e \"import('./src/config/config.js')\"",
-    "clean": "rm -rf logs screenshots node_modules"
+    "clean": "rm -rf logs screenshots node_modules",
+    "auto": "node src/bridge/auto-runner.js",
+    "auto:dry": "node src/bridge/auto-runner.js --dry-run",
+    "auto:setup": "node src/bridge/auto-runner.js --setup"
   },
   "keywords": [
     "meroshare",
