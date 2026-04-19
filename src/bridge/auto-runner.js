@@ -12,24 +12,28 @@
  * Usage:
  *   node src/bridge/auto-runner.js           # Normal mode - check and apply
  *   node src/bridge/auto-runner.js --dry-run # Preview mode - show what would run
- *   node src/bridge/auto-runner.js --setup   # Install startup service (Mac/Windows)
  */
 
 import fs from "fs"
 import path from "path"
-import { execSync, spawn } from "child_process"
+import { spawn } from "child_process"
 import { fileURLToPath } from "url"
-import os from "os"
+import dotenv from "dotenv"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const PROJECT_ROOT = path.resolve(__dirname, "../..")
+const ENV_FILE = path.join(PROJECT_ROOT, ".env")
+
+dotenv.config({ path: ENV_FILE })
 
 const IPO_FEED_URL =
+  process.env.IPO_FEED_URL ||
   "https://raw.githubusercontent.com/prabinbessie/scrappy/dev/data/ipo/ipo_feed.json"
+const SYNC_TARGET_ISSUE_TO_ENV = process.env.AUTO_RUNNER_SYNC_TARGET_IN_ENV !== "false"
 
 const STATE_FILE = path.join(PROJECT_ROOT, "bridge-data", "state.json")
-const LOG_FILE = path.join(PROJECT_ROOT, "autorun.log")
+const LOG_FILE = path.join(PROJECT_ROOT, "logs", "autorun.log")
 
 // ── Logging ──
 
@@ -38,6 +42,7 @@ function log(msg) {
   const line = `[${timestamp}] ${msg}`
   console.log(line)
   try {
+    fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true })
     fs.appendFileSync(LOG_FILE, line + "\n")
   } catch {
     // ignore log write errors
@@ -62,6 +67,53 @@ function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2))
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function formatEnvValue(value, quote = false) {
+  const normalized = String(value).replace(/\r?\n/g, " ").trim()
+  if (!quote) {
+    return normalized
+  }
+  return `"${normalized.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+}
+
+function upsertEnvValue(key, value, quote = false) {
+  const current = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, "utf-8") : ""
+  const entry = `${key}=${formatEnvValue(value, quote)}`
+  const pattern = new RegExp(`^\\s*${escapeRegExp(key)}=.*$`, "m")
+
+  let next
+  if (pattern.test(current)) {
+    next = current.replace(pattern, entry)
+  } else {
+    const suffix = current.length > 0 && !current.endsWith("\n") ? "\n" : ""
+    next = `${current}${suffix}${entry}\n`
+  }
+
+  fs.writeFileSync(ENV_FILE, next)
+}
+
+function syncTargetIssueInEnv(issueName) {
+  if (!SYNC_TARGET_ISSUE_TO_ENV) {
+    return
+  }
+
+  if (!fs.existsSync(ENV_FILE)) {
+    log(".env sync skipped: file not found")
+    return
+  }
+
+  try {
+    upsertEnvValue("TARGET_ISSUE_NAME", issueName, true)
+    upsertEnvValue("RESULTS_MODE", "false")
+    log(`Synced TARGET_ISSUE_NAME in .env: ${issueName}`)
+  } catch (error) {
+    log(`.env sync failed: ${error.message}`)
+  }
+}
+
 // ── IPO Feed ──
 
 async function fetchOpenIpos() {
@@ -82,7 +134,7 @@ async function fetchOpenIpos() {
 // ── Automation Trigger ──
 
 function runAutomation(issueName) {
-  log(`🚀 Starting automation for: ${issueName}`)
+  log(`Starting automation for: ${issueName}`)
 
   return new Promise((resolve) => {
     const child = spawn("node", ["src/index.js", "--issue", issueName], {
@@ -124,161 +176,16 @@ function runAutomation(issueName) {
   })
 }
 
-function setupMacLaunchd() {
-  const plistName = "com.meroshare.autorunner"
-  const plistPath = path.join(
-    os.homedir(),
-    "Library",
-    "LaunchAgents",
-    `${plistName}.plist`
-  )
-
-  const nodePath = execSync("which node").toString().trim()
-
-  const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>${plistName}</string>
-  
-  <key>ProgramArguments</key>
-  <array>
-    <string>${nodePath}</string>
-    <string>${path.join(PROJECT_ROOT, "src/bridge/auto-runner.js")}</string>
-  </array>
-  
-  <key>WorkingDirectory</key>
-  <string>${PROJECT_ROOT}</string>
-  
-  <!-- Run daily at 10:30 AM NPT (4:45 UTC) -->
-  <key>StartCalendarInterval</key>
-  <dict>
-    <key>Hour</key>
-    <integer>10</integer>
-    <key>Minute</key>
-    <integer>30</integer>
-  </dict>
-  
-  <!-- Also run once at login -->
-  <key>RunAtLoad</key>
-  <true/>
-
-  <key>StandardOutPath</key>
-  <string>${path.join(PROJECT_ROOT, "logs/autorun-stdout.log")}</string>
-  <key>StandardErrorPath</key>
-  <string>${path.join(PROJECT_ROOT, "logs/autorun-stderr.log")}</string>
-  
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key>
-    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
-  </dict>
-</dict>
-</plist>`
-
-  fs.mkdirSync(path.dirname(plistPath), { recursive: true })
-  fs.writeFileSync(plistPath, plistContent)
-
-  // Load the service
-  try {
-    execSync(`launchctl unload "${plistPath}" 2>/dev/null`, { stdio: "pipe" })
-  } catch {
-    // ignore if not loaded
-  }
-  execSync(`launchctl load "${plistPath}"`)
-
-  log(`macOS LaunchAgent installed at: ${plistPath}`)
-  log("   The automation will run:")
-  log("   - Once when you log in")
-  log("   - Daily at 10:30 AM")
-  log(`   To uninstall: launchctl unload "${plistPath}" && rm "${plistPath}"`)
-}
-
-function setupWindowsTaskScheduler() {
-  const taskName = "MeroShareAutoRunner"
-  const nodePath = execSync("where node").toString().trim().split("\n")[0].trim()
-  const scriptPath = path.join(PROJECT_ROOT, "src/bridge/auto-runner.js")
-
-  const createCmd = [
-    "schtasks",
-    "/Create",
-    "/TN",
-    `"${taskName}"`,
-    "/TR",
-    `"${nodePath} ${scriptPath}"`,
-    "/SC",
-    "DAILY",
-    "/ST",
-    "10:30",
-    "/F",
-  ].join(" ")
-
-  const logonCmd = [
-    "schtasks",
-    "/Create",
-    "/TN",
-    `"${taskName}_AtLogon"`,
-    "/TR",
-    `"${nodePath} ${scriptPath}"`,
-    "/SC",
-    "ONLOGON",
-    "/F",
-  ].join(" ")
-
-  try {
-    execSync(createCmd, { stdio: "pipe" })
-    execSync(logonCmd, { stdio: "pipe" })
-    log(`✅ Windows Task Scheduler tasks created: ${taskName}`)
-    log("   The automation will run:")
-    log("   - Once when you log in")
-    log("   - Daily at 10:30 AM")
-    log(`   To uninstall: schtasks /Delete /TN "${taskName}" /F && schtasks /Delete /TN "${taskName}_AtLogon" /F`)
-  } catch (err) {
-    log(`Failed to create Windows task. Try running as Administrator.`)
-    log(`   Error: ${err.message}`)
-  }
-}
-
-function runSetup() {
-  log("═══════════════════════════════════════════")
-  log("  MEROSHARE AUTO-RUNNER SETUP")
-  log("═══════════════════════════════════════════")
-
-  const platform = os.platform()
-
-  if (platform === "darwin") {
-    log("Detected: macOS — Installing LaunchAgent...")
-    setupMacLaunchd()
-  } else if (platform === "win32") {
-    log("Detected: Windows — Installing Task Scheduler...")
-    setupWindowsTaskScheduler()
-  } else {
-    log(`Unsupported platform: ${platform}`)
-    log("For Linux, add to crontab manually:")
-    log(`  crontab -e`)
-    log(`  # Add: 30 10 * * * cd ${PROJECT_ROOT} && node src/bridge/auto-runner.js`)
-    process.exit(1)
-  }
-}
-
 async function main() {
   const args = process.argv.slice(2)
   const isDryRun = args.includes("--dry-run")
-  const isSetup = args.includes("--setup")
-
-  if (isSetup) {
-    runSetup()
-    return
-  }
 
   log("═══════════════════════════════════════════")
   log("  MEROSHARE IPO AUTO-RUNNER")
   log(isDryRun ? "  MODE: DRY RUN (preview only)" : "  MODE: LIVE")
   log("═══════════════════════════════════════════")
 
-  const envPath = path.join(PROJECT_ROOT, ".env")
-  if (!fs.existsSync(envPath)) {
+  if (!fs.existsSync(ENV_FILE)) {
     log("No .env file found. Please configure credentials first.")
     log(`Copy config/.env.example to .env and fill in your details.`)
     process.exit(1)
@@ -315,10 +222,16 @@ async function main() {
   }
 
   for (const ipo of newIpos) {
-    const issueName = ipo.company_name
+    const issueName = (ipo.company_name || "").trim()
+    if (!issueName) {
+      log("Skipping IPO with missing company_name")
+      continue
+    }
+
     const key = `${issueName.toLowerCase()}::${ipo.issue_open_date || ""}`
 
     log(`\n${"─".repeat(50)}`)
+    syncTargetIssueInEnv(issueName)
     const result = await runAutomation(issueName)
 
     state.automation_triggered_by_issue[key] = {

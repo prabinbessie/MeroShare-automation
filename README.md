@@ -33,6 +33,47 @@ npm start
 npm run dev
 ```
 
+## Automatic Local Scheduler (macOS + Windows)
+
+This installs local background scheduling for fetch + apply flow.
+
+- macOS: LaunchAgent (daily + at login)
+- Windows: Task Scheduler (daily + at logon)
+
+### Setup
+
+```bash
+# Live mode (auto apply)
+npm run auto:setup
+
+# Dry mode (fetch only, no apply)
+npm run auto:setup -- --dry-run
+
+# Optional: custom daily time (24h)
+npm run auto:setup -- --time 09:45
+```
+
+Setup always runs one immediate check once, then continues on schedule.
+
+### Run Flow
+
+1. Fetch IPO feed.
+2. Find new open IPOs not processed yet.
+3. Update `.env` `TARGET_ISSUE_NAME` for the active IPO.
+4. Trigger Puppeteer apply flow.
+5. Save trigger state to avoid duplicate runs.
+
+### Files Used
+
+- `logs/autorun.log`
+- `logs/autorun-setup.log`
+- `bridge-data/state.json`
+
+### Uninstall
+
+- macOS: `launchctl unload ~/Library/LaunchAgents/com.meroshare.autorunner.plist && rm ~/Library/LaunchAgents/com.meroshare.autorunner.plist`
+- Windows: `schtasks /Delete /TN "MeroShareAutoRunner" /F && schtasks /Delete /TN "MeroShareAutoRunner_AtLogon" /F`
+
 ## Configuration
 
 ### Single Account Mode

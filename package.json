@@ -15,7 +15,7 @@
     "clean": "rm -rf logs screenshots node_modules",
     "auto": "node src/bridge/auto-runner.js",
     "auto:dry": "node src/bridge/auto-runner.js --dry-run",
-    "auto:setup": "node src/bridge/auto-runner.js --setup"
+    "auto:setup": "node scheduler/setup-local-scheduler.js"
   },
   "keywords": [
     "meroshare",
