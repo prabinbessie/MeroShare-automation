@@ -41,7 +41,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^5.11.0",
+    "@yao-pkg/pkg": "^6.19.0",
     "esbuild": "^0.24.0",
     "husky": "^9.1.7"
   },
