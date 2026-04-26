@@ -1,6 +1,6 @@
 # Docker image for MeroShare Automation
 
-FROM node:18-alpine
+FROM node:25-alpine
 RUN apk add --no-cache \
     chromium \
     nss \
