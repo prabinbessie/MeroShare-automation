@@ -39,9 +39,6 @@ export class FormAutomation {
 
       if (!clicked) throw new Error("Apply button not found or disabled")
 
-      await delay(3000)
-
-      //wait for form to load 
       await this.page.waitForSelector("select#selectBank, .section-title, .card-body", {
         timeout: TIMEOUTS.LONG,
       })
@@ -62,13 +59,10 @@ export class FormAutomation {
       this.validateKitta()
       logger.info("Selecting bank...")
       await this.selectBank()
-      await delay(2000)
       logger.info("Selecting account...")
       await this.selectAccount()
-      await delay(1500)
       logger.info(`Entering kitta: ${this.config.appliedKitta}`)
       await this.fillKitta()
-      await delay(1000)
       await this.verifyAmount()
       if (this.config.crnNumber) {
         logger.info("Entering CRN...")
@@ -149,7 +143,7 @@ export class FormAutomation {
 
       await this.page.select(SELECTORS.FORM.BANK_SELECT, bank.value)
       logger.info(`Bank selected: ${bank.text}`)
-      await delay(2000)
+      await delay(800)
     } catch (error) {
       throw new Error(`Bank selection failed: ${error.message}`)
     }
@@ -157,17 +151,15 @@ export class FormAutomation {
 
   async selectAccount() {
     try {
-      await this.page.waitForSelector(SELECTORS.FORM.ACCOUNT_SELECT, { timeout: TIMEOUTS.MEDIUM })
-      // await this.page.evaluate(() => {
-      //   const select = document.querySelector("select#accountNumber")
-      //   if (select) {
-      //     select.focus()
-      //   }
-      // })
+      await this.page.waitForFunction(
+        (sel) => {
+          const select = document.querySelector(sel)
+          return select && Array.from(select.options).filter((o) => o.value && o.value !== "").length > 0
+        },
+        { timeout: TIMEOUTS.MEDIUM },
+        SELECTORS.FORM.ACCOUNT_SELECT,
+      )
 
-      await delay(1000)
-
-      //geta available accounts
       const accounts = await this.page.evaluate((sel) => {
         const select = document.querySelector(sel)
         if (!select) return []
@@ -178,7 +170,6 @@ export class FormAutomation {
       }, SELECTORS.FORM.ACCOUNT_SELECT)
 
       logger.debug(`Available accounts: ${accounts.length}`)
-            //logger.debug(`${accounts.length}`)
 
       if (accounts.length <= 1) {
         throw new Error("No bank accounts available. Please ensure your bank account is linked in MeroShare.")
@@ -229,8 +220,9 @@ export class FormAutomation {
   }
 
   async verifyAmount() {
-    await delay(1500)
     try {
+      await this.page.waitForSelector(SELECTORS.FORM.AMOUNT_INPUT, { timeout: TIMEOUTS.SHORT })
+        .catch(() => null)
       const amount = await this.page.evaluate((sel) => {
         const input = document.querySelector(sel)
         return input?.value || ""
@@ -301,8 +293,6 @@ export class FormAutomation {
       logger.info("Step 1: Clicking Proceed...")
       await this.clickProceed()
 
-      await delay(2000)
-
       //check if we have any form errors first 
       const formError = await this.checkForErrors()
       if (formError) {
@@ -323,18 +313,19 @@ export class FormAutomation {
   }
 
   async clickProceed() {
-    const btn = await this.page.$('button.btn-primary[type="submit"]:not([disabled])')
+    const clicked = await this.page.evaluate(() => {
+      const activeStep = document.querySelector('wizard-step:not([hidden])')
+      if (!activeStep) return false
+      const btn = activeStep.querySelector('button.btn-primary[type="submit"]:not([disabled])')
+      if (btn) { btn.click(); return true }
+      return false
+    })
 
-    if (!btn) {
-      const disabledBtn = await this.page.$('button.btn-primary[type="submit"][disabled]')
-      if (disabledBtn) {
-        const errorMsg = await this.getValidationError()
-        throw new Error(`Form incomplete: ${errorMsg || "Please fill all required fields"}`)
-      }
-      throw new Error("Proceed button not found")
+    if (!clicked) {
+      const errorMsg = await this.getValidationError()
+      throw new Error(`Form incomplete: ${errorMsg || "Please fill all required fields"}`)
     }
 
-    await btn.click()
     await delay(2000)
   }
 
@@ -382,6 +373,7 @@ export class FormAutomation {
           input.value = val
           input.dispatchEvent(new Event("input", { bubbles: true }))
           input.dispatchEvent(new Event("change", { bubbles: true }))
+          input.dispatchEvent(new Event("blur", { bubbles: true })) 
         }
       },
       SELECTORS.FORM.TRANSACTION_PIN,
@@ -393,20 +385,34 @@ export class FormAutomation {
   }
 
   async clickApply() {
-    await delay(1000)
+    const applySelector = 'wizard-step:not([hidden]) button.btn-primary[type="submit"]:not([disabled])'
 
-    const btn = await this.page.$('button.btn-primary[type="submit"]:not([disabled])')
-    if (!btn) {
+    try {
+      await this.page.waitForSelector(applySelector, { timeout: TIMEOUTS.MEDIUM })
+    } catch {
+      const errorMsg = await this.checkForErrors()
+      throw new Error(errorMsg || "Apply button did not become enabled — check PIN or form state")
+    }
+
+    const clicked = await this.page.evaluate(() => {
+      const activeStep = document.querySelector('wizard-step:not([hidden])')
+      if (!activeStep) return false
+      const btn = activeStep.querySelector('button.btn-primary[type="submit"]:not([disabled])')
+      if (btn) { btn.click(); return true }
+      return false
+    })
+
+    if (!clicked) {
       const errorMsg = await this.checkForErrors()
       throw new Error(errorMsg || "Apply button not found or disabled")
     }
 
-    await btn.click()
-    await delay(3000)
+    logger.info("Apply button clicked")
+    await delay(2000)
   }
 
   async parseResult() {
-    await delay(3000)
+    await delay(1500)
 
     const successResult = await this.page.evaluate(() => {
       const toast = document.querySelector(".toast-success") //check for success toast

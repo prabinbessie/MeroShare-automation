@@ -3,44 +3,41 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
       time: "03:00"
       timezone: "Asia/Kathmandu"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
       include: "scope"
-    labels:
-      - "dependencies"
-      - "automated"
     groups:
-      npm-patch-and-minor:
+      npm-minor:
         update-types:
           - "minor"
-          - "patch"
+    ignore:
+      - dependency-name: "puppeteer"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "puppeteer-extra"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "puppeteer-extra-plugin-stealth"
+        update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "03:30"
       timezone: "Asia/Kathmandu"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "docker"
-      - "automated"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(docker)"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "04:00"
       timezone: "Asia/Kathmandu"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "automated"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(actions)"

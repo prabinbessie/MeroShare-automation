@@ -142,7 +142,12 @@ class MeroShareAutomation {
 
       //Login
       logger.info(`${label} Logging in...`)
-      const loginHandler = new LoginHandler(page, account)
+      const loginHandler = new LoginHandler(page, {
+        ...account,
+        navigationTimeout: config.navigationTimeout,
+        actionDelayMin: config.actionDelayMin,
+        actionDelayMax: config.actionDelayMax,
+      })
       await loginHandler.navigate()
       await loginHandler.login()
       logger.info(`${label} Login successful`)

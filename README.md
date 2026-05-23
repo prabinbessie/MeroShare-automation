@@ -91,16 +91,22 @@ TRANSACTION_PIN=1234
 RESULTS_MODE=false
 ```
 
-### Multiple -Account Mode
+### Multiple-Account Mode
 
 For multiple accounts, use the `ACCOUNTS` JSON array:
 
 ```env
-ACCOUNTS=[{"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10},{"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20}]
+# All accounts applying for the same issue — set globally:
 TARGET_ISSUE_NAME=Citizens Santulit Yojana
+ACCOUNTS=[{"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10},{"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20}]
 ```
 
-**Note**: When `ACCOUNTS` is set, it overrides single account settings.
+```env
+# Different issue per account — use targetIssueName per entry:
+ACCOUNTS=[{"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10,"targetIssueName":"Citizens Santulit Yojana"},{"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20,"targetIssueName":"Prabhu Life Insurance"}]
+```
+
+**Note**: When `ACCOUNTS` is set, it overrides single-account settings. `targetIssueName` per account overrides the global `TARGET_ISSUE_NAME`.
 
 ## How It Works
 
