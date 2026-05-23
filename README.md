@@ -1,182 +1,157 @@
 # MeroShare Automation
-Automate your MeroShare IPO/FPO ASBA applications with ease using  this secure Puppeteer-based tool. Designed for both single and multi-account usage, it handles dynamic form elements, validations, and error scenarios to ensure smooth submissions.
 
-## Key Features
+Automate IPO applications on MeroShare for single or multiple accounts with scheduling support.
 
-- **Multi-Account Support**: Process multiple MeroShare accounts in a single run
-- **Intelligent Form Handling**: Auto-reads minimum quantity, validates kitta, handles dropdowns
-- **Production Ready**: error handling, retry logic, comprehensive logging
-- **Secure by Design**: Credentials masked in logs, no data leaks
-- **Detailed Reporting**: Success/failure summary with reference IDs
-- **Result Scraping**: Automatically checks and reports allotment results post-application smartly into json file
+Built with Puppeteer + stealth mode. Handles Select2 dropdowns, Angular wizard forms, fuzzy issue matching, and multi-account sequential runs
 
+## Features
 
+- **Multi-account**: Process multiple MeroShare accounts in one run
+- **Fuzzy issue matching**: Finds the right IPO even with partial name
+- **Auto-scheduler**: macOS LaunchAgent / Windows Task Scheduler with auto-detect flow
+- **Result scraping**: Checks allotment results and saves to `logs/application-results.json`
+- **Safe logging**: Credentials masked in all output
+
+## Requirements
+
+- Node.js >= 18
+- npm >= 8
 
 ## Quick Start
 
 ```bash
-# Clone repository
 git clone https://github.com/prabinbessie/MeroShare-automation.git
 cd MeroShare-automation
-
-# 1. Install dependencies
 npm install
-
-# 2. Configure credentials
 cp config/.env.example .env
-nano .env  # Edit with your credentials
-
-# 3. Run
+# Edit .env with your credentials
 npm start
-
-# Debug mode (visible browser if set false in .env )
-npm run dev
 ```
 
-## Automatic Local Scheduler (macOS + Windows)
-
-This installs local background scheduling for fetch + apply flow.
-
-- macOS: LaunchAgent (daily + at login)
-- Windows: Task Scheduler (daily + at logon)
-
-### Setup
-
-```bash
-# Live mode (auto apply)
-npm run auto:setup
-
-# Dry mode (fetch only, no apply)
-npm run auto:setup -- --dry-run
-
-# Optional: custom daily time (24h)
-npm run auto:setup -- --time 09:45
-```
-
-Setup always runs one immediate check once, then continues on schedule.
-
-### Run Flow
-
-1. Fetch IPO feed.
-2. Find new open IPOs not processed yet.
-3. Update `.env` `TARGET_ISSUE_NAME` for the active IPO.
-4. Trigger Puppeteer apply flow.
-5. Save trigger state to avoid duplicate runs.
-
-### Files Used
-
-- `logs/autorun.log`
-- `logs/autorun-setup.log`
-- `bridge-data/state.json`
-
-### Uninstall
-
-- macOS: `launchctl unload ~/Library/LaunchAgents/com.meroshare.autorunner.plist && rm ~/Library/LaunchAgents/com.meroshare.autorunner.plist`
-- Windows: `schtasks /Delete /TN "MeroShareAutoRunner" /F && schtasks /Delete /TN "MeroShareAutoRunner_AtLogon" /F`
+`npm run dev` — runs with visible browser (sets `HEADLESS_MODE=false` via env).
 
 ## Configuration
 
-### Single Account Mode
-
-For one MeroShare account, set these in `.env`:
+### Single Account
 
 ```env
 MEROSHARE_USERNAME=your_username
 MEROSHARE_PASSWORD=your_password
 MEROSHARE_DP_NAME=NABIL INVESTMENT BANKING LTD.
-TARGET_ISSUE_NAME=Citizens Santulit Yojana 
+TARGET_ISSUE_NAME=Citizens Santulit Yojana
 APPLIED_KITTA=10
 CRN_NUMBER=your_crn
 TRANSACTION_PIN=1234
+HEADLESS_MODE=true
 RESULTS_MODE=false
 ```
 
-### Multiple-Account Mode
+`MEROSHARE_DP_NAME` must match exactly as shown on the MeroShare login page.
 
-For multiple accounts, use the `ACCOUNTS` JSON array:
+### Multiple Accounts
+
+Use the `ACCOUNTS` JSON array. When set, it overrides single-account env var
 
 ```env
-# All accounts applying for the same issue — set globally:
+# Same issue for all accounts — set globally:
 TARGET_ISSUE_NAME=Citizens Santulit Yojana
-ACCOUNTS=[{"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10},{"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20}]
+ACCOUNTS=[
+  {"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10},
+  {"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20}
+]
 ```
 
 ```env
 # Different issue per account — use targetIssueName per entry:
-ACCOUNTS=[{"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10,"targetIssueName":"Citizens Santulit Yojana"},{"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20,"targetIssueName":"Prabhu Life Insurance"}]
+ACCOUNTS=[
+  {"username":"user1","password":"pass1","dpName":"NABIL INVESTMENT BANKING LTD.","transactionPin":"1234","crnNumber":"CRN001","appliedKitta":10,"targetIssueName":"Citizens Santulit Yojana"},
+  {"username":"user2","password":"pass2","dpName":"Global IME Capital Ltd.","transactionPin":"5678","crnNumber":"CRN002","appliedKitta":20,"targetIssueName":"Prabhu Life Insurance"}
+]
 ```
 
-**Note**: When `ACCOUNTS` is set, it overrides single-account settings. `targetIssueName` per account overrides the global `TARGET_ISSUE_NAME`.
+`targetIssueName` per account overrides the global `TARGET_ISSUE_NAME`.
 
-## How It Works
+## Scheduler (macOS + Windows)
 
-### Automation Flow
+Installs a background schedule that fetches the IPO feed and triggers the apply flow automatically.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  For each account:                                               │
-├─────────────────────────────────────────────────────────────────┤
-│  1. Launch Browser      → Puppeteer with stealth mode           │
-│  2. Navigate to Login   → meroshare.cdsc.com.np                 │
-│  3. Select DP           → Select dropdown interaction          │
-│  4. Enter Credentials   → Username & password                   │
-│  5. Submit Login        → Wait for dashboard                    │
-│  6. Go to ASBA          → Navigate to My ASBA page              │
-│  7. Find Target Issue   → Fuzzy match issue name                │
-│  8. Click Apply         → Open application form                 │
-│  9. Read Min Quantity   → Validate kitta >= minimum             │
-│  10. Select Bank        → Native dropdown                       │
-│  11. Select Account     → Bank account number                   │
-│  12. Enter Kitta        → Number of shares                      │
-│  13. Enter CRN          → Bank reference number                 │
-│  14. Accept Disclaimer  → Checkbox                              │
-│  15. Click Proceed      → Step 1 submission                     │
-│  16. Enter PIN          → 4-digit transaction PIN               │
-│  17. Click Apply        → Final submission                      │
-│  18. Capture Result     → Success/error message                 │
-│  19. Close Browser      → Cleanup                               │
-├─────────────────────────────────────────────────────────────────┤
-│  Generate Summary Report                                         │
-└─────────────────────────────────────────────────────────────────┘
+```bash
+# Install and start
+npm run auto:setup
+
+# Dry run — fetch only, no application submitted
+npm run auto:setup -- --dry-run
+
+# Custom daily time ( your preferred time in 24h format, e.g. 09:45 )
+npm run auto:setup -- --time 09:45
 ```
 
+**Flow:** Fetch IPO feed → find new open issues → apply for each → save state to avoid duplicate runs.
 
----
+**State files:**
+- `bridge-data/state.json` — processed issue tracker
+- `logs/autorun.log` — scheduler run log
 
-## Security
+**Uninstall:**
 
-### What Gets Protected
+```bash
+# macOS
+launchctl unload ~/Library/LaunchAgents/com.meroshare.autorunner.plist
+rm ~/Library/LaunchAgents/com.meroshare.autorunner.plist
 
-- **Passwords**: Masked in all logs (`***`)
-- **PINs**: Masked in all logs (`****`)
-- **CRN**: Masked in all logs (`***`)
-- **Usernames**: Partially shown (`use***`)
-- **Screenshots**: Stored locally, not uploaded anywhere
+# Windows
+schtasks /Delete /TN "MeroShareAutoRunner" /F
+schtasks /Delete /TN "MeroShareAutoRunner_AtLogon" /F
+```
 
-## Run with Docker
+## Automation flow
 
-1. Pull the Docker image:
-   ```bash
-   docker pull prabin777/meroshare-automation:latest
-   ```
+```
+For each account:
+  1. Launch browser          Puppeteer + stealth plugin
+  2. Login                   DP dropdown → username → password → submit
+  3. Navigate to ASBA        meroshare.cdsc.com.np/#/asba
+  4. Find target issue       Fuzzy match on issue name
+  5. Open application form
+  6. Select bank + account   Waits for account options to load
+  7. Enter kitta             Validates against minimum quantity
+  8. Enter CRN               Skipped if not configured
+  9. Accept disclaimer
+  10. Click Proceed          Step 1 → Step 2 wizard transition
+  11. Enter transaction PIN
+  12. Click Apply            Final submission
+  13. Capture result         Reads success/error toast message
+  14. Close browser
 
----
+Print summary report
+```
 
+## Docker
+
+```bash
+docker pull prabin777/meroshare-automation:latest
+docker run --env-file .env prabin777/meroshare-automation:latest
+```
+
+Or with docker-compose:
+
+```bash
+docker-compose up
+```
 
 ## Project Structure
 
 ```
-meroshare-automation/
 ├── src/
-│   ├── index.js              
+│   ├── index.js                  Entry point
 │   ├── config/
-│   │   ├── config.js         
-│   │   └── constants.js      
+│   │   ├── config.js             Env parsing and validation
+│   │   └── constants.js          Selectors and timeouts
 │   ├── core/
-│   │   ├── browser.js        
-│   │   ├── login.js          
-│   │   ├── issue-detector.js 
-│   │   └── form-automation.js
+│   │   ├── browser.js            Puppeteer launch + anti-detection
+│   │   ├── login.js              Login flow
+│   │   ├── issue-detector.js     ASBA page scraping + fuzzy match
+│   │   └── form-automation.js    Application form + submission
 │   ├── errors/
 │   │   ├── error-classifier.js
 │   │   └── error-handler.js
@@ -184,38 +159,25 @@ meroshare-automation/
 │   │   ├── network-monitor.js
 │   │   └── screenshot.js
 │   ├── notifications/
-│   │   └── notifier.js       
+│   │   └── notifier.js
 │   ├── security/
-│   │   └── sanitizer.js      
+│   │   └── sanitizer.js
 │   └── utils/
 │       ├── helpers.js
-│       └── logger.js         
+│       └── logger.js
 ├── config/
-│   └── .env.example          
-├── screenshots/              
-├── logs/                     
-├── dist/                     
-├── package.json
-└── README.md
+│   └── .env.example
+├── scheduler/
+│   └── setup-local-scheduler.js
+├── bridge-data/                  Scheduler state
+├── screenshots/                  Error screenshots
+├── logs/                         Run logs and results
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+└── package.json
 ```
-
----
 
 ## License
 
-MIT License - Use at your own risk.
-
----
-
-## Disclaimer
-
-This tool is for personal use to automate your own MeroShare applications. Users are responsible for:
-
-- Using only their own accounts
-- Complying with MeroShare Terms of Service
-- Ensuring legal compliance in their jurisdiction
-- Keeping credentials secure
-
-
-
- > Failure to adhere to these guidelines may result in account suspension or legal consequences. The author is not liable for misuse of this tool.
+MIT — use at your own risk. This tool is for automating your own MeroShare accounts only. The author is not responsible for misuse or account suspension.

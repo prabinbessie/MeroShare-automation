@@ -348,10 +348,10 @@ export class FormAutomation {
   async checkForErrors() {
     return await this.page.evaluate(() => {
       const toast = document.querySelector(".toast-error")
-      if (toast) return toast.textContent.trim()
+      if (toast) return toast.textContent.replace(/\s+/g, " ").trim()
 
       const alert = document.querySelector(".alert-danger")
-      if (alert) return alert.textContent.trim()
+      if (alert) return alert.textContent.replace(/\s+/g, " ").trim()
 
       return null
     })
@@ -416,7 +416,7 @@ export class FormAutomation {
 
     const successResult = await this.page.evaluate(() => {
       const toast = document.querySelector(".toast-success") //check for success toast
-      if (toast) return { success: true, message: toast.textContent.trim() }
+      if (toast) return { success: true, message: toast.textContent.replace(/\s+/g, " ").trim() }
       return null
     })
 
@@ -430,10 +430,10 @@ export class FormAutomation {
     }
     const errorResult = await this.page.evaluate(() => {
       const toast = document.querySelector(".toast-error")//error toast
-      if (toast) return { success: false, error: toast.textContent.trim() }
+      if (toast) return { success: false, error: toast.textContent.replace(/\s+/g, " ").trim() }
 
       const alert = document.querySelector(".alert-danger")
-      if (alert) return { success: false, error: alert.textContent.trim() }
+      if (alert) return { success: false, error: alert.textContent.replace(/\s+/g, " ").trim() }
 
       return null
     })

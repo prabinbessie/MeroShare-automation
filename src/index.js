@@ -420,8 +420,12 @@ class MeroShareAutomation {
       logger.warn(`${successCount} succeeded, ${failCount} failed. Check logs for details.`)
       process.exit(1)
     } else {
+      const logsPath = path.resolve(process.cwd(), "logs", "application-results.json")
+      const screenshotsPath = path.resolve(process.cwd(), "screenshots")
       logger.error("")
-      logger.error("All applications failed. Check logs and screenshots for details.")
+      logger.error("All applications failed.")
+      logger.error(`  Logs:        ${logsPath}`)
+      logger.error(`  Screenshots: ${screenshotsPath}`)
       process.exit(2)
     }
   } catch (error) {
