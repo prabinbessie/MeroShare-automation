@@ -142,7 +142,7 @@ function runAutomation(issueName) {
       env: {
         ...process.env,
         RESULTS_MODE: "false",
-        HEADLESS_MODE: "new",
+        HEADLESS_MODE: "true",
       },
       stdio: "pipe",
     })
@@ -201,7 +201,7 @@ async function main() {
   const state = loadState()
 
   const newIpos = openIpos.filter((ipo) => {
-    const key = `${(ipo.company_name || "").toLowerCase()}::${ipo.issue_open_date || ""}`
+    const key = `${(ipo.company_name || "").trim().toLowerCase()}::${ipo.issue_open_date || ""}`
     return !state.automation_triggered_by_issue[key]
   })
 
@@ -252,6 +252,16 @@ async function main() {
 
   log("\n═══════════════════════════════════════════")
   log("  AUTO-RUNNER COMPLETE")
+  log("═══════════════════════════════════════════")
+  log(`  Processed this run: ${newIpos.length} IPO(s)`)
+  for (const ipo of newIpos) {
+    const key = `${(ipo.company_name || "").trim().toLowerCase()}::${ipo.issue_open_date || ""}`
+    const entry = state.automation_triggered_by_issue[key]
+    if (entry) {
+      const status = entry.success ? "SUCCESS" : `FAILED (exit ${entry.exit_code})`
+      log(`  [${status}] ${entry.company}`)
+    }
+  }
   log("═══════════════════════════════════════════")
 }
 

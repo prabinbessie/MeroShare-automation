@@ -190,36 +190,32 @@ ${argXml}
 
 function installWindowsScheduler(nodePath, options) {
   const runnerArgs = getRunnerArgs(options.dryRun)
-  const runnerCommand = `\\"${nodePath}\\" ${runnerArgs.map((arg) => `\\"${arg}\\"`).join(" ")}`
+  const runnerCommand = `"${nodePath}" ${runnerArgs.map((arg) => `"${arg}"`).join(" ")}`
 
-  const dailyCmd = [
-    "schtasks",
+  const dailyArgs = [
     "/Create",
-    "/TN",
-    `\"${WINDOWS_TASK_NAME}\"`,
-    "/TR",
-    `\"${runnerCommand}\"`,
-    "/SC",
-    "DAILY",
-    "/ST",
-    options.time,
+    "/TN", WINDOWS_TASK_NAME,
+    "/TR", runnerCommand,
+    "/SC", "DAILY",
+    "/ST", options.time,
     "/F",
-  ].join(" ")
+  ]
 
-  const logonCmd = [
-    "schtasks",
+  const logonArgs = [
     "/Create",
-    "/TN",
-    `\"${WINDOWS_TASK_NAME}_AtLogon\"`,
-    "/TR",
-    `\"${runnerCommand}\"`,
-    "/SC",
-    "ONLOGON",
+    "/TN", `${WINDOWS_TASK_NAME}_AtLogon`,
+    "/TR", runnerCommand,
+    "/SC", "ONLOGON",
     "/F",
-  ].join(" ")
+  ]
 
-  execSync(dailyCmd, { stdio: "pipe" })
-  execSync(logonCmd, { stdio: "pipe" })
+  const daily = spawnSync("schtasks", dailyArgs, { stdio: "pipe", shell: false })
+  if (daily.error) throw new Error(`Failed to create daily task: ${daily.error.message}`)
+  if (daily.status !== 0) throw new Error(`schtasks daily failed: ${daily.stderr?.toString().trim()}`)
+
+  const logon = spawnSync("schtasks", logonArgs, { stdio: "pipe", shell: false })
+  if (logon.error) throw new Error(`Failed to create logon task: ${logon.error.message}`)
+  if (logon.status !== 0) throw new Error(`schtasks logon failed: ${logon.stderr?.toString().trim()}`)
 
   log(`Windows tasks installed: ${WINDOWS_TASK_NAME}, ${WINDOWS_TASK_NAME}_AtLogon`)
   log(`Run schedule: daily at ${options.time} + at user logon`)
@@ -235,6 +231,9 @@ function runOnceNow(nodePath, dryRun) {
     env: process.env,
   })
 
+  if (result.error) {
+    throw new Error(`Immediate execution spawn error: ${result.error.message}`)
+  }
   if (result.status !== 0) {
     throw new Error(`Immediate execution failed with exit code ${result.status}`)
   }

@@ -5,7 +5,6 @@
 
 import { logger } from "../utils/logger.js"
 import { SELECTORS, TIMEOUTS } from "../config/constants.js"
-import { Target } from "puppeteer-core"
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -139,7 +138,9 @@ export class IssueDetector {
     }
     if (!match) {
       match = issues.find(
-        (issue) => issue.name.toLowerCase().includes(normalized) || normalized.includes(issue.name.toLowerCase()),
+        (issue) =>
+          (issue.name.toLowerCase().includes(normalized) || normalized.includes(issue.name.toLowerCase())) &&
+          issue.canApply,
       )
     }
 

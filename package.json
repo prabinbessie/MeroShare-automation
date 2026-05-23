@@ -9,8 +9,8 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "dev": "NODE_ENV=development LOG_LEVEL=debug HEADLESS_MODE=false node src/index.js",
-    "results": "RESULTS_MODE=true node src/index.js",
+    "dev": "cross-env NODE_ENV=development LOG_LEVEL=debug HEADLESS_MODE=false node src/index.js",
+    "results": "cross-env RESULTS_MODE=true node src/index.js",
     "validate": "node -e \"import('./src/config/config.js')\"",
     "clean": "rm -rf logs screenshots node_modules",
     "auto": "node src/bridge/auto-runner.js",
@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@yao-pkg/pkg": "^5.11.0",
+    "cross-env": "^7.0.3",
     "esbuild": "^0.24.0",
     "husky": "^9.1.7"
   },
