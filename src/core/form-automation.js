@@ -323,18 +323,21 @@ export class FormAutomation {
   }
 
   async clickProceed() {
-    const btn = await this.page.$('button.btn-primary[type="submit"]:not([disabled])')
+    const activeStepSelector = 'wizard-step:not([hidden]) button.btn-primary[type="submit"]:not([disabled])'
 
-    if (!btn) {
-      const disabledBtn = await this.page.$('button.btn-primary[type="submit"][disabled]')
-      if (disabledBtn) {
-        const errorMsg = await this.getValidationError()
-        throw new Error(`Form incomplete: ${errorMsg || "Please fill all required fields"}`)
-      }
-      throw new Error("Proceed button not found")
+    const clicked = await this.page.evaluate(() => {
+      const activeStep = document.querySelector('wizard-step:not([hidden])')
+      if (!activeStep) return false
+      const btn = activeStep.querySelector('button.btn-primary[type="submit"]:not([disabled])')
+      if (btn) { btn.click(); return true }
+      return false
+    })
+
+    if (!clicked) {
+      const errorMsg = await this.getValidationError()
+      throw new Error(`Form incomplete: ${errorMsg || "Please fill all required fields"}`)
     }
 
-    await btn.click()
     await delay(2000)
   }
 
@@ -382,6 +385,7 @@ export class FormAutomation {
           input.value = val
           input.dispatchEvent(new Event("input", { bubbles: true }))
           input.dispatchEvent(new Event("change", { bubbles: true }))
+          input.dispatchEvent(new Event("blur", { bubbles: true })) 
         }
       },
       SELECTORS.FORM.TRANSACTION_PIN,
@@ -393,15 +397,29 @@ export class FormAutomation {
   }
 
   async clickApply() {
-    await delay(1000)
+    const applySelector = 'wizard-step:not([hidden]) button.btn-primary[type="submit"]:not([disabled])'
 
-    const btn = await this.page.$('button.btn-primary[type="submit"]:not([disabled])')
-    if (!btn) {
+    try {
+      await this.page.waitForSelector(applySelector, { timeout: TIMEOUTS.MEDIUM })
+    } catch {
+      const errorMsg = await this.checkForErrors()
+      throw new Error(errorMsg || "Apply button did not become enabled — check PIN or form state")
+    }
+
+    const clicked = await this.page.evaluate(() => {
+      const activeStep = document.querySelector('wizard-step:not([hidden])')
+      if (!activeStep) return false
+      const btn = activeStep.querySelector('button.btn-primary[type="submit"]:not([disabled])')
+      if (btn) { btn.click(); return true }
+      return false
+    })
+
+    if (!clicked) {
       const errorMsg = await this.checkForErrors()
       throw new Error(errorMsg || "Apply button not found or disabled")
     }
 
-    await btn.click()
+    logger.info("Apply button clicked")
     await delay(3000)
   }
 
