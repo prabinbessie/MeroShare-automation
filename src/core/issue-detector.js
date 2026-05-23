@@ -24,7 +24,7 @@ export class IssueDetector {
         timeout: TIMEOUTS.LONG,
       })
 
-      await delay(2000) // delay as angular may still be rendering
+      await delay(500) // delay as angular may still be rendering
 
       //scrape all available issues from company list 
       const issues = await this.scrapeIssues()
@@ -127,21 +127,13 @@ export class IssueDetector {
     if (!match) {
       match = issues.find((issue) => normalized.includes(issue.name.toLowerCase().trim()) && issue.canApply)
     }
-
-    // fourthly wordbased match if any siginificnalty matched words
     if (!match) {
-      const targetWords = normalized.split(/\s+/).filter((w) => w.length > 2) // ignore short words
+      const targetWords = normalized.split(/\s+/).filter((w) => w.length > 2)
       match = issues.find((issue) => {
         const issueWords = issue.name.toLowerCase().split(/\s+/)
-        return targetWords.some((tw) => issueWords.some((iw) => iw.includes(tw))) && issue.canApply
+        const matchCount = targetWords.filter((tw) => issueWords.some((iw) => iw === tw || iw.startsWith(tw))).length
+        return matchCount >= 2 && issue.canApply
       })
-    }
-    if (!match) {
-      match = issues.find(
-        (issue) =>
-          (issue.name.toLowerCase().includes(normalized) || normalized.includes(issue.name.toLowerCase())) &&
-          issue.canApply,
-      )
     }
 
     return match
@@ -165,30 +157,4 @@ export class IssueDetector {
     }
   }
 
-  async clickApplyButton(issue) {
-    logger.info(`Clicking Apply button for: ${issue.name}`)
-
-    try {
-      const clicked = await this.page.evaluate((issueIndex) => {
-        const companyLists = document.querySelectorAll(".company-list")
-        if (companyLists[issueIndex]) {
-          const button = companyLists[issueIndex].querySelector("button.btn-issue")
-          if (button && !button.disabled) {
-            button.click()
-            return true
-          }
-        }
-        return false
-      }, issue.index)
-
-      if (!clicked) {
-        throw new Error("Failed to click Apply button")
-      }
-
-      await delay(2000)
-      logger.info("Apply button clicked, waiting for form to load...")
-    } catch (error) {
-      throw new Error(`Failed to click apply button: ${error.message}`)
-    }
-  }
 }

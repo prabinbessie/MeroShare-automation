@@ -25,7 +25,7 @@ export class BrowserManager {
     logger.info("Launching browser.......")
 
     const launchOptions = {
-      headless: this.config.headless ? "new" : false,
+      headless: this.config.headless,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",

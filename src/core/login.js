@@ -21,7 +21,6 @@ export class LoginHandler {
       waitUntil: "networkidle2",
       timeout: this.config.navigationTimeout,
     })
-    await delay(2000, 3000)
     logger.info("Login page loaded")
   }
 
@@ -104,43 +103,34 @@ export class LoginHandler {
       await typeText(this.page, this.config.dpName, 80)
       logger.debug(`Typed DP name: ${this.config.dpName}`)
 
-      // Wait for options to filter
-      await delay(1500)
+      await delay(800)
 
-      // Wait for options to appear
       await this.page.waitForSelector(SELECTORS.SELECT2.OPTION, {
         timeout: TIMEOUTS.SHORT,
       })
 
       // Find and click the matching option
-      const optionClicked = await this.page.evaluate((dpName) => {
-        const options = document.querySelectorAll(".select2-results__option")
-        for (const option of options) {
-          const text = option.textContent.toLowerCase()
-          if (text.includes(dpName.toLowerCase())) {
-            option.click()
-            return true
-          }
+      const result = await this.page.evaluate((dpName) => {
+        const options = Array.from(document.querySelectorAll(".select2-results__option"))
+        const available = options.map((o) => o.textContent.trim())
+        const match = options.find((o) => o.textContent.toLowerCase().includes(dpName.toLowerCase()))
+        if (match) {
+          match.click()
+          return { found: true }
         }
-        // If no exact match, click the first/highlighted option
-        const highlighted = document.querySelector(".select2-results__option--highlighted")
-        if (highlighted) {
-          highlighted.click()
-          return true
-        }
-        if (options.length > 0) {
-          options[0].click()
-          return true
-        }
-        return false
+        return { found: false, available }
       }, this.config.dpName)
 
-      if (!optionClicked) {
-        // Fallback: press Enter to select highlighted option
-        await this.page.keyboard.press("Enter")
+      if (!result.found) {
+        const list = (result.available || []).slice(0, 10).join(", ")
+        throw new Error(
+          `DP "${this.config.dpName}" not found in dropdown.\n` +
+          `Available options: ${list || "(none loaded)"}\n` +
+          `Check MEROSHARE_DP_NAME in your .env — it must match exactly as shown on the MeroShare login page.`
+        )
       }
 
-      await delay(500)
+      await delay(300)
       logger.info(`DP selected: ${this.config.dpName}`)
     } catch (error) {
       logger.error(`Failed to select DP: ${error.message}`)
@@ -214,22 +204,6 @@ export class LoginHandler {
       throw new Error(`Form submission failed: ${error.message}`)
     }
   }
-//as we dont have security challenges now for future
-  // async detectSecurityChallenges() {
-  // //   //for CAPTCHA
-  // //   const captcha = await this.page.$('img[src*="captcha"], .captcha')
-  // //   if (captcha) {
-  // //     throw ErrorClassifier.create("SECURITY_INTERRUPTION", "CAPTCHA detected. Manual intervention required.")
-  // //   }
-
-  //   // const otp = await this.page.$('input[placeholder*="OTP"], input[name*="otp"]')
-  //   // if (otp) {
-  //   //   throw ErrorClassifier.create("SECURITY_INTERRUPTION", "OTP challenge detected. Manual intervention required.")
-  //   // }
-
-  //   logger.debug("No security challenges detected")
-  // }
-
   async verifyLoginSuccess() {
     try {
       const dashboardSelectors = [
